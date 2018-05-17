@@ -1,0 +1,10 @@
+.vscode
+*.dblite
+*.asc
+*.bin
+*.blif
+*.out
+*.vcd
+*.elf
+*.log
+abc.history

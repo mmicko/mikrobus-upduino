@@ -1,0 +1,47 @@
+# TODO: pcf
+
+set_io -nowarn flash_csb 16
+set_io -nowarn flash_clk 15
+set_io -nowarn flash_io0 14
+set_io -nowarn flash_io1 17
+
+# TODO : QSPI
+set_io -nowarn flash_io2 31
+set_io -nowarn flash_io3 34
+
+set_io -nowarn RGB0 39
+set_io -nowarn RGB1 40
+set_io -nowarn RGB2 41
+
+set_io -nowarn AN_1    12
+set_io -nowarn RST_1   21
+set_io -nowarn MOSI_1  13
+set_io -nowarn MISO_1  19
+set_io -nowarn SCK_1   18
+set_io -nowarn CS_1    11
+set_io -nowarn PWM_1    9
+set_io -nowarn INT_1    6
+set_io -nowarn RX_1    44
+set_io -nowarn TX_1     4
+set_io -nowarn SCL_1    3
+set_io -nowarn SDA_1   48
+set_io -nowarn ser_tx  45 # set_io EXT_1   45
+set_io -nowarn ser_rx  47 # set_io EXT_2   47
+set_io -nowarn EXT_3   46
+set_io -nowarn EXT_4    2
+
+set_io -nowarn AN_2    23
+set_io -nowarn RST_2   25
+set_io -nowarn CS_2    26
+set_io -nowarn SCK_2   27
+set_io -nowarn MISO_2  32
+set_io -nowarn MOSI_2  35
+#set_io -nowarn NC_1    31
+set_io -nowarn PWM_2   37
+#set_io -nowarn NC_2    34
+set_io -nowarn INT_2   43
+set_io -nowarn RX_2    35
+set_io -nowarn TX_2    42
+set_io -nowarn SCL_2   38
+set_io -nowarn SDA_2   28
+
