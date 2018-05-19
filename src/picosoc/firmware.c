@@ -2,6 +2,17 @@
 #include <stdbool.h>
 
 
+#define PIN_AN_1   1 << 9
+#define PIN_RST_1  1 << 8
+#define PIN_CS_1   1 << 7
+#define PIN_PWM_1  1 << 6
+#define PIN_INT_1  1 << 5
+#define PIN_AN_2   1 << 4
+#define PIN_RST_2  1 << 3
+#define PIN_CS_2   1 << 2
+#define PIN_PWM_2  1 << 1
+#define PIN_INT_2  1 << 0
+
 #define reg_spictrl (*(volatile uint32_t*)0x02000000)
 #define reg_uart_clkdiv (*(volatile uint32_t*)0x02000004)
 #define reg_uart_data (*(volatile uint32_t*)0x02000008)
@@ -318,6 +329,11 @@ char _getchar()
 
 // --------------------------------------------------------
 
+inline int gpio(uint32_t pin)
+{
+	return (reg_gpio_data & pin);
+}
+
 void wire_test()
 {
 	print("Start wire test\n");
@@ -327,12 +343,12 @@ void wire_test()
 
 
 	reg_gpio_data = 0; // write zero
-	reg_gpio_mode = 0; // PIN OUT
+	reg_gpio_mode = PIN_CS_1; // PIN OUT
 	_delay_ms(20);
-	reg_gpio_mode = 1; // PIN INPUT
+	reg_gpio_mode = 0; // PIN INPUT
 	int retries1 = 0;
 	int timeout1 = 0;
-	while(reg_gpio_data) 
+	while(gpio(PIN_CS_1)) 
 	{
 		retries1 += 2;
 		if (retries1 > 60)
@@ -343,7 +359,7 @@ void wire_test()
 	}
 	int retries2 = 0;
 	int timeout2 = 0;
-	while(!reg_gpio_data) 
+	while(!gpio(PIN_CS_1)) 
 	{
 		retries2 += 2;
 		if (retries2 > 100)
@@ -354,7 +370,7 @@ void wire_test()
 	}
 	int retries3 = 0;
 	int timeout3 = 0;
-	while(reg_gpio_data) 
+	while(gpio(PIN_CS_1)) 
 	{
 		retries3 += 2;
 		if (retries3 > 100)
@@ -370,9 +386,9 @@ void wire_test()
 	for (int i = 0 ; i < 40 ; i++)
 	{
 		//There is always a leading low level of 50 us
-		while(!reg_gpio_data) {}
+		while(!gpio(PIN_CS_1)) {}
 		retries = 0;
-		while(reg_gpio_data)
+		while(gpio(PIN_CS_1))
 		{
 			retries++;
 			if (retries & 0x40)

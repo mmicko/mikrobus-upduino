@@ -30,10 +30,21 @@ module mikrobus_soc (
 		
 	output RGB0, RGB1, RGB2,
 	
+	inout AN_1,
+	inout RST_1,
+	inout CS_1,
+	inout PWM_1,
+	inout INT_1,
+	inout AN_2,
+	inout RST_2,
+	inout CS_2,
+	inout PWM_2,
+	inout INT_2,
+
 	inout SDA_1, SCL_1,	
 	inout SDA_2, SCL_2,
-	inout MISO_1, MOSI_1, SCK_1,
-	inout CS_1
+	inout MISO_1, MOSI_1, SCK_1
+	
 );
 	wire clk;
 
@@ -61,6 +72,20 @@ module mikrobus_soc (
 		.D_IN_0({flash_io3_di, flash_io2_di, flash_io1_di, flash_io0_di})
 	);
 
+	reg [31:0] gpio_oe;
+	reg [31:0] gpio_do;
+	wire [9:0] gpio_di;
+
+	SB_IO #(
+		.PIN_TYPE(6'b 1010_01),
+		.PULLUP(1'b 0)
+	) gpio_control [9:0] (
+		.PACKAGE_PIN({AN_1, RST_1, CS_1, PWM_1, INT_1, AN_2, RST_2, CS_2, PWM_2, INT_2}),
+		.OUTPUT_ENABLE(gpio_oe[9:0]),
+		.D_OUT_0(gpio_do[9:0]),
+		.D_IN_0(gpio_di[9:0])
+	);
+
 	wire        iomem_valid;
 	reg         iomem_ready;
 	wire [3:0]  iomem_wstrb;
@@ -68,30 +93,31 @@ module mikrobus_soc (
 	wire [31:0] iomem_wdata;
 	reg  [31:0] iomem_rdata;
 
-	reg [31:0] gpio;
-	
-	reg gpio_32_rw = 1'b1;
-	
-	assign CS_1 = gpio_32_rw ? 1'bz : gpio[0];
-
 	wire ip_ready;
 	wire [31:0] ip_rdata; 
 
 	always @(posedge clk) begin
 		if (!resetn) begin
-			gpio <= 0;
+			gpio_oe <= 0;
+			gpio_do <= 0;
 		end else begin
 			iomem_ready <= 0;
 			if (iomem_valid && !iomem_ready && iomem_addr[31:24] == 8'h 03) begin
 				iomem_ready <= 1;
 				if (iomem_addr == 32'h 0300_0004)
 				begin
-					if (iomem_wstrb[0]) gpio_32_rw <= iomem_wdata[0];
+					if (iomem_wstrb[0]) gpio_oe[ 7: 0] <= iomem_wdata[ 7: 0];
+					if (iomem_wstrb[1]) gpio_oe[15: 8] <= iomem_wdata[15: 8];
+					if (iomem_wstrb[2]) gpio_oe[23:16] <= iomem_wdata[23:16];
+					if (iomem_wstrb[3]) gpio_oe[31:24] <= iomem_wdata[31:24];
 				end
 				else if (iomem_addr == 32'h 0300_0000)
 				begin
-					if (iomem_wstrb[0]) gpio[ 7: 0] <= iomem_wdata[ 7: 0];
-					iomem_rdata <= { 31'b 0000_0000_0000_000, CS_1 };
+					iomem_rdata <= gpio_di;
+					if (iomem_wstrb[0]) gpio_do[ 7: 0] <= iomem_wdata[ 7: 0];
+					if (iomem_wstrb[1]) gpio_do[15: 8] <= iomem_wdata[15: 8];
+					if (iomem_wstrb[2]) gpio_do[23:16] <= iomem_wdata[23:16];
+					if (iomem_wstrb[3]) gpio_do[31:24] <= iomem_wdata[31:24];
 				end	
 				else 
 				begin
