@@ -30,6 +30,7 @@ module mikrobus_soc (
 		
 	output RGB0, RGB1, RGB2,
 	
+	inout SDA_1, SCL_1,	
 	inout SDA_2, SCL_2,
 	inout MISO_1, MOSI_1, SCK_1,
 	inout CS_1
@@ -160,8 +161,11 @@ module mikrobus_soc (
 		
 		.pwm({pwm_r, pwm_g, pwm_b}),
 		
-		.i2c_sda(SDA_2),
-		.i2c_scl(SCL_2),
+		.i2c_sda_1(SDA_1),
+		.i2c_scl_1(SCL_1),
+
+		.i2c_sda_2(SDA_2),
+		.i2c_scl_2(SCL_2),
 
 		.spi_miso(MISO_1),
 		.spi_mosi(MOSI_1),

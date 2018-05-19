@@ -79,51 +79,51 @@ void print_dec(uint32_t v)
 #define I2CINTCR 	(0x07)
 #define I2CINTSR 	(0x06)
 
-inline void i2c_wait() 
+inline void i2c_wait(uint8_t offset) 
 {
-	while((reg_i2c[I2CSR] & 0x04) == 0);
+	while((reg_i2c[I2CSR+offset] & 0x04) == 0);
 }
 
-inline void i2c_wait_srw() 
+inline void i2c_wait_srw(uint8_t offset) 
 {
-	while((reg_i2c[I2CSR] & 0x10) == 0);
+	while((reg_i2c[I2CSR+offset] & 0x10) == 0);
 }
 
-void i2c_begin(uint8_t addr, bool is_read) 
+void i2c_begin(uint8_t offset,uint8_t addr, bool is_read) 
 {
-	reg_i2c[I2CTXDR] = (addr << 1) | (is_read & 0x01);
-	reg_i2c[I2CCMDR] = 0x94;
+	reg_i2c[I2CTXDR+offset] = (addr << 1) | (is_read & 0x01);
+	reg_i2c[I2CCMDR+offset] = 0x94;
 	
 	if(is_read) 
 	{
-		i2c_wait_srw();
-		reg_i2c[I2CCMDR] = 0x24;
+		i2c_wait_srw(offset);
+		reg_i2c[I2CCMDR+offset] = 0x24;
 
 	} else 
 	{
-		i2c_wait();
+		i2c_wait(offset);
 	}
 }
 
-void i2c_write(uint8_t data) 
+void i2c_write(uint8_t offset,uint8_t data) 
 {
-	reg_i2c[I2CTXDR] = data;
-	reg_i2c[I2CCMDR] = 0x14;
-	i2c_wait();
-	reg_i2c[I2CCMDR] = 0x0;
+	reg_i2c[I2CTXDR+offset] = data;
+	reg_i2c[I2CCMDR+offset] = 0x14;
+	i2c_wait(offset);
+	reg_i2c[I2CCMDR+offset] = 0x0;
 }
 
-void i2c_stop() 
+void i2c_stop(uint8_t offset) 
 {
-	reg_i2c[I2CCMDR] = 0x44;
+	reg_i2c[I2CCMDR+offset] = 0x44;
 }
 
-void i2c_init() 
+void i2c_init(uint8_t offset) 
 {
-	reg_i2c[I2CCR1] = 0x80;
+	reg_i2c[I2CCR1+offset] = 0x80;
 	uint16_t prescale = 50;
-	reg_i2c[I2CBRMSB] = (prescale >> 8) & 0xFF;
-	reg_i2c[I2CBRLSB] = prescale & 0xFF;
+	reg_i2c[I2CBRMSB+offset] = (prescale >> 8) & 0xFF;
+	reg_i2c[I2CBRLSB+offset] = prescale & 0xFF;
 }
 
 
@@ -145,32 +145,32 @@ void _delay_ms(uint32_t ms)
 	delay_cyc(12050*ms);
 }
 
-uint8_t i2c_read(bool is_last) 
+uint8_t i2c_read(uint8_t offset,bool is_last) 
 {
 	if(is_last)
 	{
-		uint8_t dummy = reg_i2c[I2CRXDR];		
-		reg_i2c[I2CCMDR] = 0x6C;
-		i2c_wait();
-		uint8_t data = reg_i2c[I2CRXDR];
+		uint8_t dummy = reg_i2c[I2CRXDR + offset];		
+		reg_i2c[I2CCMDR + offset] = 0x6C;
+		i2c_wait(offset);
+		uint8_t data = reg_i2c[I2CRXDR + offset];
 		return data;
 	} 
 	else 
 	{
-		i2c_wait();
-		return reg_i2c[I2CRXDR] & 0xFF;
+		i2c_wait(offset);
+		return reg_i2c[I2CRXDR + offset] & 0xFF;
 	}
 }
 
-int i2c_scan(uint8_t addr)
+int i2c_scan(uint8_t offset,uint8_t addr)
 {
 	uint8_t d;	
-	i2c_begin(addr, false);
-	i2c_write(0x00);
-	i2c_begin(addr, true);
+	i2c_begin(offset,addr, false);
+	i2c_write(offset,0x00);
+	i2c_begin(offset,addr, true);
 	_delay_us(20);
-	d = reg_i2c[I2CSR];
-	i2c_read(true);
+	d = reg_i2c[I2CSR + offset];
+	i2c_read(offset,true);
 	return (d & 0x20)==0x00;
 }
 
@@ -200,9 +200,9 @@ void print_dec_ex(int i)
 	print(rev);
 }
 
-void i2c_test() 
+void i2c_test(uint8_t offset) 
 {
-	i2c_init();
+	i2c_init(offset);
 
 	print("scan:\n");
 	int val[0x80];
@@ -210,7 +210,7 @@ void i2c_test()
 
 	for(int i=0x1;i<0x80;i++)
 	{
-		val[i] = i2c_scan(i);
+		val[i] = i2c_scan(offset,i);
 		if(val[i]) found = true;
 	}
 
@@ -436,7 +436,8 @@ void main()
 		print("\n");
 		print("Select an action:\n");
 		print("\n");
-		print("   [I] Scan I2C test\n");
+		print("   [1] Scan I2C on mikroBUS 1\n");
+		print("   [2] Scan I2C on mikroBUS 2\n");
 		print("   [S] Run SPI test\n");
 		print("   [W] DHT-22 1-wire test\n");
 
@@ -453,8 +454,11 @@ void main()
 
 			switch (cmd)
 			{
-			case 'I':
-				i2c_test();
+			case '1':
+				i2c_test(0x00);
+				break;
+			case '2':
+				i2c_test(0x80 >> 2);
 				break;
 			case 'S':
 				spi_test();

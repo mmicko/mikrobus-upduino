@@ -11,22 +11,30 @@ module ip_wrapper_up5k(
   
   output [2:0]  pwm,
   
-  inout i2c_sda,
-  inout i2c_scl,
+  inout i2c_sda_1,
+  inout i2c_scl_1,
+
+  inout i2c_sda_2,
+  inout i2c_scl_2,
+  
   inout spi_miso,
   inout spi_mosi,
   inout spi_sck
 );
 
-wire led_en, i2c_en, ctrl_en, spi_en;
+wire led_en, ctrl_en, spi_en;
+wire i2c_en;
 
 assign led_en = (address[23:16] == 8'h00);
 assign i2c_en = (address[23:16] == 8'h01);
 assign ctrl_en = (address[23:16] == 8'h10);
 assign spi_en = (address[23:16] == 8'h03);
 
-wire [7:0] i2c_read_data;
-wire i2c_ack;
+wire [7:0] i2c_read_data_1;
+wire i2c_ack_1;
+
+wire [7:0] i2c_read_data_2;
+wire i2c_ack_2;
 
 wire [7:0] spi_read_data;
 wire spi_ack;
@@ -50,10 +58,16 @@ begin
     if(wstrb[0])
       ctrl_reg <= write_data;
     rdata_reg <= {24'h0, ctrl_reg};
-  end else if(!ready && i2c_en && i2c_ack && valid)
+  end 
+  else if(!ready && i2c_en && i2c_ack_1 && valid)
   begin
     ready <= 1'b1;
-    rdata_reg <= i2c_read_data;
+    rdata_reg <= i2c_read_data_1;
+  end
+  else if(!ready && i2c_en && i2c_ack_2 && valid)
+  begin
+    ready <= 1'b1;
+    rdata_reg <= i2c_read_data_2;
   end
   else if(!ready && spi_en && spi_ack && valid)
   begin
@@ -86,12 +100,13 @@ SB_LEDDA_IP ledda_i (
   .PWMOUT2(pwm[2])
 );
 
-wire sdai, sdao, sdaoe, scli, sclo, scloe;
+// I2C 1st block
+wire sdai_1, sdao_1, sdaoe_1, scli_1, sclo_1, scloe_1;
 
 SB_I2C #(
   .I2C_SLAVE_INIT_ADDR("0b1111100001"),
   .BUS_ADDR74("0b0001")
-) i2c_i (
+) i2c_block_1 (
   .SBCLKI(clock),
   .SBRWI(wstrb[0]),
   .SBSTBI(valid && i2c_en && !ready),
@@ -111,46 +126,113 @@ SB_I2C #(
   .SBDATI5(write_data[5]),
   .SBDATI6(write_data[6]),
   .SBDATI7(write_data[7]),
-  .SBDATO0(i2c_read_data[0]),
-  .SBDATO1(i2c_read_data[1]),
-  .SBDATO2(i2c_read_data[2]),
-  .SBDATO3(i2c_read_data[3]),
-  .SBDATO4(i2c_read_data[4]),
-  .SBDATO5(i2c_read_data[5]),
-  .SBDATO6(i2c_read_data[6]),
-  .SBDATO7(i2c_read_data[7]),
-  .SBACKO(i2c_ack),
+  .SBDATO0(i2c_read_data_1[0]),
+  .SBDATO1(i2c_read_data_1[1]),
+  .SBDATO2(i2c_read_data_1[2]),
+  .SBDATO3(i2c_read_data_1[3]),
+  .SBDATO4(i2c_read_data_1[4]),
+  .SBDATO5(i2c_read_data_1[5]),
+  .SBDATO6(i2c_read_data_1[6]),
+  .SBDATO7(i2c_read_data_1[7]),
+  .SBACKO(i2c_ack_1),
   .I2CIRQ(),
   .I2CWKUP(),
-  .SCLI(scli),
-  .SCLO(sclo),
-  .SCLOE(scloe),
-  .SDAI(sdai),
-  .SDAO(sdao),
-  .SDAOE(sdaoe)
+  .SCLI(scli_1),
+  .SCLO(sclo_1),
+  .SCLOE(scloe_1),
+  .SDAI(sdai_1),
+  .SDAO(sdao_1),
+  .SDAOE(sdaoe_1)
 );
 
 SB_IO #(
   .PIN_TYPE(6'b101001),
   .PULLUP(1'b1)
-) scl_io (
-  .PACKAGE_PIN(i2c_scl),
-  .OUTPUT_ENABLE(scloe),
-  .D_OUT_0(sclo),
-  .D_IN_0(scli)
+) scl_io_1 (
+  .PACKAGE_PIN(i2c_scl_1),
+  .OUTPUT_ENABLE(scloe_1),
+  .D_OUT_0(sclo_1),
+  .D_IN_0(scli_1)
 );
 
 
 SB_IO #(
   .PIN_TYPE(6'b101001),
   .PULLUP(1'b1)
-) sda_io (
-  .PACKAGE_PIN(i2c_sda),
-  .OUTPUT_ENABLE(sdaoe),
-  .D_OUT_0(sdao),
-  .D_IN_0(sdai)
+) sda_io_1 (
+  .PACKAGE_PIN(i2c_sda_1),
+  .OUTPUT_ENABLE(sdaoe_1),
+  .D_OUT_0(sdao_1),
+  .D_IN_0(sdai_1)
 );
 
+// I2C 2nd block
+wire sdai_2, sdao_2, sdaoe_2, scli_2, sclo_2, scloe_2;
+
+SB_I2C #(
+  .I2C_SLAVE_INIT_ADDR("0b1111100001"),
+  .BUS_ADDR74("0b0011")
+) i2c_block_2 (
+  .SBCLKI(clock),
+  .SBRWI(wstrb[0]),
+  .SBSTBI(valid && i2c_en && !ready),
+  .SBADRI0(address[2]),
+  .SBADRI1(address[3]),
+  .SBADRI2(address[4]),
+  .SBADRI3(address[5]),
+  .SBADRI4(address[6]),
+  .SBADRI5(address[7]),
+  .SBADRI6(address[8]),
+  .SBADRI7(address[9]),
+  .SBDATI0(write_data[0]),
+  .SBDATI1(write_data[1]),
+  .SBDATI2(write_data[2]),
+  .SBDATI3(write_data[3]),
+  .SBDATI4(write_data[4]),
+  .SBDATI5(write_data[5]),
+  .SBDATI6(write_data[6]),
+  .SBDATI7(write_data[7]),
+  .SBDATO0(i2c_read_data_2[0]),
+  .SBDATO1(i2c_read_data_2[1]),
+  .SBDATO2(i2c_read_data_2[2]),
+  .SBDATO3(i2c_read_data_2[3]),
+  .SBDATO4(i2c_read_data_2[4]),
+  .SBDATO5(i2c_read_data_2[5]),
+  .SBDATO6(i2c_read_data_2[6]),
+  .SBDATO7(i2c_read_data_2[7]),
+  .SBACKO(i2c_ack_2),
+  .I2CIRQ(),
+  .I2CWKUP(),
+  .SCLI(scli_2),
+  .SCLO(sclo_2),
+  .SCLOE(scloe_2),
+  .SDAI(sdai_2),
+  .SDAO(sdao_2),
+  .SDAOE(sdaoe_2)
+);
+
+SB_IO #(
+  .PIN_TYPE(6'b101001),
+  .PULLUP(1'b1)
+) scl_io_2 (
+  .PACKAGE_PIN(i2c_scl_2),
+  .OUTPUT_ENABLE(scloe_2),
+  .D_OUT_0(sclo_2),
+  .D_IN_0(scli_2)
+);
+
+
+SB_IO #(
+  .PIN_TYPE(6'b101001),
+  .PULLUP(1'b1)
+) sda_io_2 (
+  .PACKAGE_PIN(i2c_sda_2),
+  .OUTPUT_ENABLE(sdaoe_2),
+  .D_OUT_0(sdao_2),
+  .D_IN_0(sdai_2)
+);
+
+// SPI Block
 wire mi;
 wire so;
 wire soe;
