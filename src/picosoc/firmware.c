@@ -334,6 +334,19 @@ inline int gpio(uint32_t pin)
 	return (reg_gpio_data & pin);
 }
 
+const uint8_t _7_seg_mapping[10] = {
+	0x7E, // '0'
+	0x0A, // '1'    _a_
+	0xB6, // '2'  f|   |b
+	0x9E, // '3'   |_g_|
+	0xCA, // '4'  e|   |c
+	0xDC, // '5'   |_d_|.dp
+	0xFC, // '6'
+	0x0E, // '7'
+	0xFE, // '8'
+	0xDE // '9'
+};
+
 void wire_test()
 {
 	print("Start wire test\n");
@@ -429,6 +442,130 @@ void wire_test()
 	print(".");
 	print_dec_ex(temp%10);
 	print("C\n");
+
+	uint8_t hi = temp / 100;
+	uint8_t lo = (temp / 10) % 10;
+
+	reg_gpio_data = 0;
+	reg_gpio_mode = PIN_RST_2 | PIN_CS_2; // PIN OUT
+
+	spi_init();
+
+	reg_gpio_data = PIN_RST_2;
+	_delay_us(100);
+
+	spi_write(_7_seg_mapping[lo]);
+	spi_write(_7_seg_mapping[hi]);
+	
+	reg_gpio_data = PIN_RST_2 | 0;
+	_delay_us(100);
+	reg_gpio_data = PIN_RST_2 | PIN_CS_2;
+	_delay_us(100);
+
+	spi_deinit();
+}
+
+void ledring_test() 
+{
+	reg_gpio_data = 0;
+	reg_gpio_mode = PIN_RST_2 | PIN_CS_2; // PIN OUT
+
+	spi_init();
+
+	reg_gpio_data = PIN_RST_2;
+	_delay_ms(1);
+
+	union {
+		uint32_t val;
+		uint8_t part[4];
+	} t;
+	t.val = 1;
+	
+	for (int i=0;i<32*5;i++)
+	{
+		spi_write(t.part[0]);
+		spi_write(t.part[1]);
+		spi_write(t.part[2]);
+		spi_write(t.part[3]);
+		
+		t.val <<= 1;
+		if (t.val == 0) t.val = 1;
+
+		reg_gpio_data = PIN_RST_2 | 0;
+		_delay_ms(1);
+		reg_gpio_data = PIN_RST_2 | PIN_CS_2;
+		_delay_ms(10);
+	}
+
+	spi_write(0);
+	spi_write(0);
+	spi_write(0);
+	spi_write(0);
+	reg_gpio_data = PIN_RST_2 | 0;
+	_delay_ms(1);
+	reg_gpio_data = PIN_RST_2 | PIN_CS_2;
+	_delay_ms(10);
+
+	_delay_ms(1);
+	spi_deinit();
+}
+
+void _7seg_test() 
+{
+	reg_gpio_data = 0;
+	reg_gpio_mode = PIN_RST_2 | PIN_CS_2; // PIN OUT
+
+	spi_init();
+
+	reg_gpio_data = PIN_RST_2;
+	_delay_us(100);
+
+	spi_write(0xb6);
+	spi_write(0x0e);
+	
+	reg_gpio_data = PIN_RST_2 | 0;
+	_delay_us(100);
+	reg_gpio_data = PIN_RST_2 | PIN_CS_2;
+	_delay_us(100);
+
+	spi_deinit();
+}
+
+void _7x10_test() 
+{
+	reg_gpio_data = PIN_PWM_2;
+	reg_gpio_mode = PIN_AN_2 | PIN_RST_2 | PIN_CS_2 | PIN_PWM_2; // PIN OUT
+
+	spi_init();
+
+	for (int j=0;j<100;j++)
+	{
+	for (int i=0;i<7;i++)
+	{
+		spi_write(0x11);
+		spi_write(0x03);
+		reg_gpio_data = PIN_RST_2 ;
+		_delay_us(100);
+		reg_gpio_data = PIN_RST_2 | PIN_AN_2;
+		_delay_us(100);
+		
+		spi_write(0x11);
+		spi_write(0x03);
+		reg_gpio_data = PIN_RST_2 | 0;
+		_delay_us(100);
+		reg_gpio_data = PIN_RST_2 | PIN_AN_2;
+		_delay_us(100);
+
+		spi_write(0x11);
+		spi_write(0x03);
+		reg_gpio_data = PIN_RST_2 | 0 ;
+		_delay_us(100);
+		reg_gpio_data = PIN_RST_2 | PIN_AN_2;
+		_delay_us(100);
+	}
+	}
+
+	spi_deinit();
 }
 // --------------------------------------------------------
 void main()
@@ -455,7 +592,10 @@ void main()
 		print("   [1] Scan I2C on mikroBUS 1\n");
 		print("   [2] Scan I2C on mikroBUS 2\n");
 		print("   [S] Run SPI test\n");
-		print("   [W] DHT-22 1-wire test\n");
+		print("   [W] DHT-22 1-wire test (mikroBUS 1)\n");
+		print("   [7] 7seg test (mikroBUS 2)\n");
+		print("   [0] 7x10 R test (mikroBUS 2)\n");
+		print("   [L] LED ring test (mikroBUS 2)\n");
 
 		print("\n");
 
@@ -481,6 +621,15 @@ void main()
 				break;
 			case 'W':
 				wire_test();
+				break;
+			case '7':
+				_7seg_test();
+				break;
+			case '0':
+				_7x10_test();
+				break;
+			case 'L':
+				ledring_test();
 				break;
 			default:
 				continue;

@@ -11,12 +11,20 @@ module ip_wrapper_up5k(
   
   output [2:0]  pwm,
   
-  inout i2c_sda_1,
-  inout i2c_scl_1,
+  input sdai_1,
+  output sdao_1,
+  output sdaoe_1,
+  input scli_1,
+  output sclo_1,
+  output scloe_1,
 
-  inout i2c_sda_2,
-  inout i2c_scl_2,
-  
+  input sdai_2,
+  output sdao_2,
+  output sdaoe_2,
+  input scli_2,
+  output sclo_2,
+  output scloe_2,
+
   inout spi_miso,
   inout spi_mosi,
   inout spi_sck
@@ -101,7 +109,6 @@ SB_LEDDA_IP ledda_i (
 );
 
 // I2C 1st block
-wire sdai_1, sdao_1, sdaoe_1, scli_1, sclo_1, scloe_1;
 
 SB_I2C #(
   .I2C_SLAVE_INIT_ADDR("0b1111100001"),
@@ -145,29 +152,7 @@ SB_I2C #(
   .SDAOE(sdaoe_1)
 );
 
-SB_IO #(
-  .PIN_TYPE(6'b101001),
-  .PULLUP(1'b1)
-) scl_io_1 (
-  .PACKAGE_PIN(i2c_scl_1),
-  .OUTPUT_ENABLE(scloe_1),
-  .D_OUT_0(sclo_1),
-  .D_IN_0(scli_1)
-);
-
-
-SB_IO #(
-  .PIN_TYPE(6'b101001),
-  .PULLUP(1'b1)
-) sda_io_1 (
-  .PACKAGE_PIN(i2c_sda_1),
-  .OUTPUT_ENABLE(sdaoe_1),
-  .D_OUT_0(sdao_1),
-  .D_IN_0(sdai_1)
-);
-
 // I2C 2nd block
-wire sdai_2, sdao_2, sdaoe_2, scli_2, sclo_2, scloe_2;
 
 SB_I2C #(
   .I2C_SLAVE_INIT_ADDR("0b1111100001"),
@@ -211,26 +196,7 @@ SB_I2C #(
   .SDAOE(sdaoe_2)
 );
 
-SB_IO #(
-  .PIN_TYPE(6'b101001),
-  .PULLUP(1'b1)
-) scl_io_2 (
-  .PACKAGE_PIN(i2c_scl_2),
-  .OUTPUT_ENABLE(scloe_2),
-  .D_OUT_0(sclo_2),
-  .D_IN_0(scli_2)
-);
 
-
-SB_IO #(
-  .PIN_TYPE(6'b101001),
-  .PULLUP(1'b1)
-) sda_io_2 (
-  .PACKAGE_PIN(i2c_sda_2),
-  .OUTPUT_ENABLE(sdaoe_2),
-  .D_OUT_0(sdao_2),
-  .D_IN_0(sdai_2)
-);
 
 // SPI Block
 wire mi;

@@ -43,7 +43,7 @@ module mikrobus_soc (
 
 	inout SDA_1, SCL_1,	
 	inout SDA_2, SCL_2,
-	inout MISO_1, MOSI_1, SCK_1
+	inout MISO_2, MOSI_2, SCK_2
 	
 );
 	wire clk;
@@ -175,6 +175,9 @@ module mikrobus_soc (
 	
 	wire pwm_g, pwm_b, pwm_r;
 
+	wire sdai_1, sdao_1, sdaoe_1, scli_1, sclo_1, scloe_1;
+	wire sdai_2, sdao_2, sdaoe_2, scli_2, sclo_2, scloe_2;
+
 	ip_wrapper_up5k ip(
 		.clock(clk),
 		.reset(!resetn),
@@ -187,18 +190,71 @@ module mikrobus_soc (
 		
 		.pwm({pwm_r, pwm_g, pwm_b}),
 		
-		.i2c_sda_1(SDA_1),
-		.i2c_scl_1(SCL_1),
+		// I2C block 1
+		.sdai_1(sdai_1), 
+		.sdao_1(sdao_1), 
+		.sdaoe_1(sdaoe_1),
+		.scli_1(scli_1),
+		.sclo_1(sclo_1),
+		.scloe_1(scloe_1),
 
-		.i2c_sda_2(SDA_2),
-		.i2c_scl_2(SCL_2),
+		// I2C block 2
+		.sdai_2(sdai_2), 
+		.sdao_2(sdao_2), 
+		.sdaoe_2(sdaoe_2),
+		.scli_2(scli_2),
+		.sclo_2(sclo_2),
+		.scloe_2(scloe_2),
 
-		.spi_miso(MISO_1),
-		.spi_mosi(MOSI_1),
-		.spi_sck(SCK_1)
+		// SPI block 2
+		.spi_miso(MISO_2),
+		.spi_mosi(MOSI_2),
+		.spi_sck(SCK_2)
 	);
 	
 	
+	SB_IO #(
+	.PIN_TYPE(6'b101001),
+	.PULLUP(1'b1)
+	) scl_io_1 (
+	.PACKAGE_PIN(SCL_1),
+	.OUTPUT_ENABLE(scloe_1),
+	.D_OUT_0(sclo_1),
+	.D_IN_0(scli_1)
+	);
+
+
+	SB_IO #(
+	.PIN_TYPE(6'b101001),
+	.PULLUP(1'b1)
+	) sda_io_1 (
+	.PACKAGE_PIN(SDA_1),
+	.OUTPUT_ENABLE(sdaoe_1),
+	.D_OUT_0(sdao_1),
+	.D_IN_0(sdai_1)
+	);
+
+	SB_IO #(
+	.PIN_TYPE(6'b101001),
+	.PULLUP(1'b1)
+	) scl_io_2 (
+	.PACKAGE_PIN(SCL_2),
+	.OUTPUT_ENABLE(scloe_2),
+	.D_OUT_0(sclo_2),
+	.D_IN_0(scli_2)
+	);
+
+
+	SB_IO #(
+	.PIN_TYPE(6'b101001),
+	.PULLUP(1'b1)
+	) sda_io_2 (
+	.PACKAGE_PIN(SDA_2),
+	.OUTPUT_ENABLE(sdaoe_2),
+	.D_OUT_0(sdao_2),
+	.D_IN_0(sdai_2)
+	);
+
 	SB_RGBA_DRV RGBA_DRIVER (
 	  .CURREN(1'b1),
 	  .RGBLEDEN(1'b1),
