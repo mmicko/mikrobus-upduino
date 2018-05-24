@@ -1,4 +1,4 @@
-RISCV_TOOLS_PREFIX = /opt/riscv64/bin/riscv64-unknown-elf-
+RISCV_TOOLS_PREFIX = riscv64-unknown-elf-
 CXX = $(RISCV_TOOLS_PREFIX)g++
 CC = $(RISCV_TOOLS_PREFIX)gcc
 AS = $(RISCV_TOOLS_PREFIX)gcc
